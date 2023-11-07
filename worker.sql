@@ -153,3 +153,56 @@ SELECT * FROM Worker WHERE MOD(WORKER_ID,2) = 0;
 SELECT * INTO WorkerClone FROM Worker;
 
 -- There are 3 queries are pending. 
+--  Q-31. Write an SQL query to show the current date and time.
+SELECT CURDATE();
+
+-- Q-32. Write an SQL query to show the top n (say 10) records of a table.
+SELECT * FROM Worker LIMIT 5;
+
+-- Q-33. Write an SQL query to determine the nth (say n=5) highest salary from a table.
+SELECT SALARY FROM Worker;
+
+-- Q-34. Write an SQL query to determine the 5th highest salary without using the TOP or limit method.
+SELECT * FROM Worker ORDER BY SALARY DESC LIMIT 5,1;
+
+-- Q-35. Write an SQL query to fetch the list of employees with the same salary.
+SELECT W1.WORKER_ID,W1.FIRST_NAME,W1.SALARY FROM Worker W1 INNER JOIN Worker W2 ON W1.WORKER_ID!=W2.WORKER_ID AND W1.SALARY=W2.SALARY;
+SELECT * FROM WORKER WHERE SALARY IN (SELECT SALARY FROM Worker GROUP BY SALARY HAVING COUNT(*) > 1);
+-- SELECT SALARY FROM Worker GROUP BY SALARY HAVING COUNT(*) > 1;
+
+-- Q-36. Write an SQL query to show the second-highest salary from a table.
+SELECT MAX(SALARY) FROM WORKER WHERE SALARY NOT IN(SELECT MAX(SALARY) FROM WORKER);
+
+-- Q-37. Write an SQL query to show one row twice in the results from a table.
+SELECT * FROM WORKER
+UNION ALL
+SELECT * FROM WORKER ORDER BY WORKER_ID;
+
+-- Q-38. Write an SQL query to fetch intersecting records of two tables.
+-- CREATE DUPLICATE TABLE
+	CREATE TABLE WORKERCLONE AS
+	SELECT * FROM WORKER;
+
+-- Q-39. Write an SQL query to fetch the first 50% of records from a table.
+SELECT * FROM WORKER WHERE WORKER_ID <= (SELECT COUNT(*) / 2 FROM WORKER);
+
+-- Q-40. Write an SQL query to fetch the departments that have less than five people in them.
+SELECT DEPARTMENT,COUNT(*) AS TOTAL FROM WORKER GROUP BY DEPARTMENT HAVING TOTAL < 5 ORDER BY TOTAL;
+
+-- Q-41. Write an SQL query to show all departments along with the number of people in there.
+SELECT DEPARTMENT,COUNT(*) AS TOTAL FROM WORKER GROUP BY DEPARTMENT ORDER BY TOTAL;
+
+-- Q-42. Write an SQL query to show the last record from a table.
+SELECT * FROM WORKER WHERE WORKER_ID =( SELECT MAX(WORKER_ID) FROM WORKER );
+
+-- Q-43. Write an SQL query to fetch the first row of a table.
+SELECT * FROM WORKER WHERE WORKER_ID = (SELECT MIN(WORKER_ID) FROM WORKER);
+
+-- Q-44. Write an SQL query to fetch the last five records from a table.
+SELECT * FROM WORKER WHERE WORKER_ID > (SELECT COUNT(*) - 4 FROM WORKER);
+
+-- Q-45. Write an SQL query to print the names of employees having the highest salary in each department.
+SELECT CONCAT(FIRST_NAME," ",LAST_NAME) AS "FULL NAME", DEPARTMENT,SALARY FROM WORKER WHERE SALARY IN( SELECT MAX(SALARY) AS TOTAL FROM WORKER GROUP BY DEPARTMENT );
+
+-- Q-46. Write an SQL query to fetch three max salaries from a table.
+SELECT * FROM WORKER;
