@@ -84,7 +84,35 @@ LEFT JOIN project p ON p.member_id = e.emp_id;
 SELECT * 
 FROM employee e 
 JOIN department d ON d.dept_id = e.dept_id;
- 
+
+--  Sub queris 
+SELECT * FROM employee WHERE salary > (SELECT AVG(salary) FROM employee)
+ORDER BY emp_id;
+-- WITH JOIN
+SELECT *
+FROM employee e
+INNER JOIN (SELECT AVG(salary) avg_sal FROM employee) avg_sal_table
+	on e.salary > avg_sal_table.avg_sal
+ORDER BY emp_id;
+
+-- Find the employee who earn the highest salary in each department
+
+SELECT d.dept_name,max(e.salary)
+FROM employee e 
+INNER JOIN department d ON e.dept_id = d.dept_id
+GROUP BY d.dept_name;
+
+-- find department who don't have an employees
+SELECT * FROM employee WHERE dept_id NOT IN(SELECT distinct d.dept_id
+FROM employee e
+INNER JOIN department d ON e.dept_id = d.dept_id);
+
+-- Find the employee in each department who earn more than the average salary in each department
+
+SELECT * FROM employee e1 where salary  > (
+	SELECT AVG(salary) from employee e2 WHERE e1.dept_id = e2.dept_id 
+);
+
 SELECT * FROM employee;
 SELECT * FROM department;
 SELECT * FROM manager;
