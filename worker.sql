@@ -204,5 +204,17 @@ SELECT * FROM WORKER WHERE WORKER_ID > (SELECT COUNT(*) - 4 FROM WORKER);
 -- Q-45. Write an SQL query to print the names of employees having the highest salary in each department.
 SELECT CONCAT(FIRST_NAME," ",LAST_NAME) AS "FULL NAME", DEPARTMENT,SALARY FROM WORKER WHERE SALARY IN( SELECT MAX(SALARY) AS TOTAL FROM WORKER GROUP BY DEPARTMENT );
 
--- Q-46. Write an SQL query to fetch three max salaries from a table.
-SELECT * FROM WORKER;
+-- Q-46. Write an SQL query to fetch three MAX salaries from a table.
+SELECT DISTINCT SALARY FROM WORKER A WHERE (SELECT COUNT(DISTINCT SALARY) FROM WORKER B WHERE A.SALARY <= B.SALARY) <=3 ORDER BY A.SALARY DESC;
+
+-- Q-47. Write an SQL query to fetch three MIN salaries from a table.
+SELECT DISTINCT SALARY FROM WORKER A WHERE (SELECT COUNT(DISTINCT SALARY) FROM WORKER B WHERE A.SALARY >= B.SALARY) <=3 ORDER BY A.SALARY DESC;
+
+-- Q-48. Write an SQL query to fetch nth max salaries from a table. ( N = 5 )
+SELECT DISTINCT SALARY FROM WORKER A WHERE (SELECT COUNT(DISTINCT SALARY) FROM WORKER B WHERE A.SALARY <= B.SALARY) <= 5 ORDER BY A.SALARY DESC;
+
+-- Q-49. Write an SQL query to fetch departments along with the total salaries paid for each of them.
+SELECT DEPARTMENT,SUM(SALARY) AS TOTAL FROM WORKER GROUP BY DEPARTMENT;
+
+-- Q-50. Write an SQL query to fetch the names of workers who earn the highest salary.
+SELECT FIRST_NAME,SALARY FROM WORKER WHERE SALARY IN ( SELECT MAX(SALARY) FROM WORKER );
