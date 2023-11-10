@@ -110,10 +110,22 @@ INNER JOIN department d ON e.dept_id = d.dept_id);
 -- Find the employee in each department who earn more than the average salary in each department
 
 SELECT * FROM employee e1 where salary  > (
-	SELECT AVG(salary) from employee e2 WHERE e1.dept_id = e2.dept_id 
+	SELECT AVG(salary) from employee e2 WHERE 1
 );
+
+-- VIEW CREATED
+CREATE VIEW office_detail AS 
+SELECT e.emp_name,d.dept_name , m.manager_name, p.project_name
+FROM employee e
+LEFT JOIN department d ON e.dept_id = d.dept_id
+LEFT JOIN manager m ON e.manager_id = m.manager_id
+LEFT JOIN project p ON p.member_id = e.emp_id;
+
+SELECT * FROM employee WHERE SALARY > (SELECT salary FROM employee WHERE emp_name = "Ali");
+
 
 SELECT * FROM employee;
 SELECT * FROM department;
 SELECT * FROM manager;
 SELECT * FROM project;
+
