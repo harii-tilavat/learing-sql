@@ -191,13 +191,23 @@ INSERT INTO Customer (customer_id, name, visited_on, amount) VALUES (10, 'Jhon',
 INSERT INTO Customer (customer_id, name, visited_on, amount) VALUES (11, 'Jade', '2019-01-10', 150);
 
 ------------ Query
-SELECT * FROM Customer;
-SELECT 
-	*,
-	SUM(amount) OVER (ORDER BY visited_on) AS TOTAL
-FROM Customer
-ORDER BY visited_on;
 
+select c1.visited_on
+    ,sum(c2.amount) amount
+    ,ROUND(sum(c2.amount+0.00)/7, 2) average_amount
+from (select distinct visited_on from customer) c1
+inner join customer c2 on c2.visited_on <= c1.visited_on 
+    and c2.visited_on >  dateadd(day, -7, c1.visited_on)
+group by c1.visited_on
+having count(distinct c2.visited_on) = 7
+order by c1.visited_on
+
+SELECT c1.visited_on,COUNT(*),SUM(C2.amount) AS amount, ROUND(CAST(SUM(C2.amount) AS FLOAT) / 7,2) AS average_amount 
+FROM (SELECT DISTINCT visited_on FROM Customer) AS C1
+INNER JOIN Customer C2 ON C2.visited_on <= C1.visited_on AND C2.visited_on > DATEADD(DAY,-7,C1.visited_on)
+GROUP BY C1.visited_on
+HAVING COUNT(DISTINCT C2.visited_on) = 7
+ORDER BY C1.visited_on
 --------------------------------------1393. Capital Gain/Loss ---------------------------------------------
 
 IF OBJECT_ID('Stocks', 'U') IS NOT NULL
@@ -237,12 +247,12 @@ GROUP BY stock_name
 ORDER BY stock_name
 ----------------ANOTHER
 SELECT stock_name,
-SUM(
-Case
-	When operation='Buy' then -price
-	When operation='Sell' then price
-End) 
-As capital_gain_loss
+	SUM(
+	Case
+		When operation='Buy' then -price
+		When operation='Sell' then price
+	End
+) As capital_gain_loss
 FROM Stocks
 Group By stock_name
 
@@ -273,3 +283,238 @@ union
 SELECT 'Average Salary' as category, sum(CASE WHEN income BETWEEN 20000 AND 50000 THEN 1 ELSE 0 END) AS accounts_count FROM Accounts
 union
 SELECT 'High Salary' as category, sum(CASE WHEN income > 50000 THEN 1 ELSE 0 END) AS accounts_count FROM Accounts
+
+
+--------------------------------------ANY. EMPLOYEE AND DEPARTMENT---------------------------------------------
+
+IF OBJECT_ID('Employee', 'U') IS NOT NULL
+    DROP TABLE Employee;
+
+IF OBJECT_ID('Department', 'U') IS NOT NULL
+    DROP TABLE Department;
+
+-- Create Employee table
+CREATE TABLE Employee (
+    id INT,
+    name VARCHAR(255),
+    salary INT,
+    departmentId INT
+);
+
+-- Truncate Employee table
+TRUNCATE TABLE Employee;
+
+-- Insert data into Employee table
+INSERT INTO Employee (id, name, salary, departmentId) VALUES (1, 'Joe', 85000, 1);
+INSERT INTO Employee (id, name, salary, departmentId) VALUES (2, 'Henry', 80000, 2);
+INSERT INTO Employee (id, name, salary, departmentId) VALUES (3, 'Sam', 60000, 2);
+INSERT INTO Employee (id, name, salary, departmentId) VALUES (4, 'Max', 90000, 1);
+INSERT INTO Employee (id, name, salary, departmentId) VALUES (5, 'Janet', 69000, 1);
+INSERT INTO Employee (id, name, salary, departmentId) VALUES (6, 'Randy', 85000, 1);
+INSERT INTO Employee (id, name, salary, departmentId) VALUES (7, 'Will', 70000, 1);
+
+-- Create Department table
+CREATE TABLE Department (
+    id INT,
+    name VARCHAR(255)
+);
+
+-- Truncate Department table
+TRUNCATE TABLE Department;
+
+-- Insert data into Department table
+INSERT INTO Department (id, name) VALUES (1, 'IT');
+INSERT INTO Department (id, name) VALUES (2, 'Sales');
+
+-----------------QUERY
+EXEC [GetEmpByDept] 2
+
+SELECT * 
+FROM Employee E
+INNER JOIN Department D ON E.departmentId = D.id
+WHERE D.name = 'IT'
+;
+
+sp_helptext spUpdateSalaryByDept 'IT',10
+
+
+UPDATE Employee
+SET salary = 10000
+FROM Employee E 
+INNER JOIN Department D ON E.departmentId = D.id
+WHERE D.name = 'IT'
+
+
+------------------------
+BEGIN
+	DECLARE @i INT  = 1
+	WHILE @i <= 5
+	BEGIN
+		SELECT * FROM Employee WHERE id = @i;
+		SET @i = @i + 1
+	END
+END
+
+SELECT * 
+INTO backupTable
+FROM Employee
+WHERE 1=0;
+
+
+CREATE TRIGGER tr_backupEmployee
+ON Employee
+AFTER DELETE
+AS
+BEGIN
+	INSERT INTO backupTable (id,name,salary,departmentId,date_deleted)
+	SELECT  id,name,salary,departmentId, GETDATE()
+	FROM deleted
+END
+
+SELECT * FROM Employee;
+DELETE FROM Employee WHERE id = 1
+SELECT * FROM Employee;
+SELECT * FROM backupTable;
+
+
+
+--------------------------------Understanding INDEX. -----------------------------
+CREATE TABLE EmployeeWithoutIndex (
+    EmployeeID INT PRIMARY KEY,
+    FirstName NVARCHAR(50),
+    LastName NVARCHAR(50),
+    DepartmentID INT
+);
+
+SELECT * FROM EmployeeWithoutIndex;
+INSERT INTO EmployeeWithoutIndex (EmployeeID, FirstName, LastName, DepartmentID)
+SELECT TOP 99999
+    ROW_NUMBER() OVER (ORDER BY (SELECT NULL)),
+    'FirstName' + CAST(ROW_NUMBER() OVER (ORDER BY (SELECT NULL)) AS NVARCHAR(5)),
+    'LastName' + CAST(ROW_NUMBER() OVER (ORDER BY (SELECT NULL)) AS NVARCHAR(5)),
+    ROUND(RAND() * 10, 0)
+FROM master.dbo.spt_values a, master.dbo.spt_values b;
+SELECT * FROM master.dbo.spt_values;
+
+TRUNCATE TABLE EmployeeWithoutIndex;
+SELECT * FROM EmployeeWithoutIndex WHERE EmployeeID = 1;
+
+SELECT * FROM EmployeeWithoutIndex
+
+
+-------------------------------------- Dynamic query ----------------------
+DECLARE @query VARCHAR(100)
+DECLARE @columnList VARCHAR(100) = 'id, name, salary, departmentId'	
+SELECT @query = CONCAT('SELECT ',@columnList ,' FROM Employee') 
+
+EXEC (@query)
+EXEC GetListOfFieldName 
+
+SELECT * FROM Customer
+SELECT 
+	*,
+	SUM(amount) OVER (ORDER BY visited_on)
+--	STRING_AGG(name,',') OVER (ORDER BY name)
+FROM Customer
+
+SELECT * FROM Customer
+
+---------------------------UPDATE AMOUNT IN INCREMENT ORDER BY 100 -------------------------------
+DECLARE @firstNumber INT ;
+DECLARE @lastNumber INT ;
+DECLARE @amount INT = 0;
+WITH T AS (
+	SELECT *,ROW_NUMBER() OVER (ORDER BY customer_id DESC) as LAST,ROW_NUMBER() OVER (ORDER BY customer_id) AS FIRST FROM Customer
+)
+SELECT TOP 1 @firstNumber =  FIRST, @lastNumber =  LAST
+FROM T 
+BEGIN
+	WHILE @firstNumber <= @lastNumber
+	BEGIN
+		SET @amount = @amount + 100
+		UPDATE Customer 
+		SET amount = @amount
+		WHERE customer_id = @firstNumber
+		SET @firstNumber = @firstNumber + 1
+	END
+END
+
+SELECT 
+	*,
+	SUM(amount) OVER (ORDER BY customer_id )
+FROM Customer
+
+DECLARE @EmployeeID INT = 1;
+DECLARE @NewSalary INT;
+
+WHILE @EmployeeID <= 1000
+BEGIN
+    SET @NewSalary = @EmployeeID * 100; -- Adjust the increment as needed
+
+    UPDATE Customer
+    SET amount = @NewSalary
+    WHERE customer_id = @EmployeeID;
+
+    SET @EmployeeID = @EmployeeID + 1;
+END;
+
+SELECT * FROM Customer
+
+SELECT NULLIF(2,2)
+SELECT DATEADD(MONTH,1,'2003-10-20')
+
+----------------------------CURSOR example -------------------
+
+DECLARE 
+    @product_name VARCHAR(MAX), 
+    @list_price   DECIMAL;
+
+DECLARE cursor_product CURSOR
+FOR SELECT 
+        name,salary
+    FROM 
+        Employee;
+
+OPEN cursor_product;
+
+FETCH NEXT FROM cursor_product INTO 
+    @product_name, 
+    @list_price;
+
+WHILE @@FETCH_STATUS = 0
+    BEGIN
+        PRINT @product_name + CAST(@list_price AS varchar);
+        FETCH NEXT FROM cursor_product INTO 
+            @product_name, 
+            @list_price;
+    END;
+
+CLOSE cursor_product;
+
+DEALLOCATE cursor_product;
+
+--------------------------------------- TRY CATCH -------------------------------
+CREATE PROC usp_divide(
+    @a decimal,
+    @b decimal,
+    @c decimal output
+) AS
+BEGIN
+    BEGIN TRY
+        SET @c = @a / @b;
+    END TRY
+    BEGIN CATCH
+        SELECT  
+            ERROR_NUMBER() AS ErrorNumber  
+            ,ERROR_SEVERITY() AS ErrorSeverity  
+            ,ERROR_STATE() AS ErrorState  
+            ,ERROR_PROCEDURE() AS ErrorProcedure  
+            ,ERROR_LINE() AS ErrorLine  
+            ,ERROR_MESSAGE() AS ErrorMessage;  
+    END CATCH
+END;
+GO
+
+DECLARE @r decimal;
+EXEC usp_divide 10, 0, @r output;
+PRINT @r;

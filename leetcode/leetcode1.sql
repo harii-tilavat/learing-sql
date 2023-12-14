@@ -672,7 +672,6 @@ BEGIN
         name VARCHAR(30)
     );
 END
-
 -- Create table If Not Exists MovieRating
 IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'MovieRating')
 BEGIN
@@ -943,3 +942,198 @@ FROM (
     FROM Sales 
 ) AS TEMP
 WHERE RANK_NUM = 1
+
+--------------------------------------------------- 262. Trips and Users -------------------------------------
+
+IF OBJECT_ID('Trips', 'U') IS NOT NULL
+    DROP TABLE Trips;
+
+IF OBJECT_ID('Users', 'U') IS NOT NULL
+    DROP TABLE Users;
+
+CREATE TABLE Trips (
+    id INT,
+    client_id INT,
+    driver_id INT,
+    city_id INT,
+    status VARCHAR(50),
+    request_at VARCHAR(50)
+);
+
+CREATE TABLE Users (
+    users_id INT,
+    banned VARCHAR(50),
+    role VARCHAR(50)
+);
+
+TRUNCATE TABLE Trips;
+
+INSERT INTO Trips (id, client_id, driver_id, city_id, status, request_at) VALUES (1, 1, 10, 1, 'completed', '2013-10-01');
+INSERT INTO Trips (id, client_id, driver_id, city_id, status, request_at) VALUES (2, 2, 11, 1, 'cancelled_by_driver', '2013-10-01');
+INSERT INTO Trips (id, client_id, driver_id, city_id, status, request_at) VALUES (3, 3, 12, 6, 'completed', '2013-10-01');
+INSERT INTO Trips (id, client_id, driver_id, city_id, status, request_at) VALUES (4, 4, 13, 6, 'cancelled_by_client', '2013-10-01');
+INSERT INTO Trips (id, client_id, driver_id, city_id, status, request_at) VALUES (5, 1, 10, 1, 'completed', '2013-10-02');
+INSERT INTO Trips (id, client_id, driver_id, city_id, status, request_at) VALUES (6, 2, 11, 6, 'completed', '2013-10-02');
+INSERT INTO Trips (id, client_id, driver_id, city_id, status, request_at) VALUES (7, 3, 12, 6, 'completed', '2013-10-02');
+INSERT INTO Trips (id, client_id, driver_id, city_id, status, request_at) VALUES (8, 2, 12, 12, 'completed', '2013-10-03');
+INSERT INTO Trips (id, client_id, driver_id, city_id, status, request_at) VALUES (9, 3, 10, 12, 'completed', '2013-10-03');
+INSERT INTO Trips (id, client_id, driver_id, city_id, status, request_at) VALUES (10, 4, 13, 12, 'cancelled_by_driver', '2013-10-03');
+
+TRUNCATE TABLE Users;
+
+INSERT INTO Users (users_id, banned, role) VALUES (1, 'No', 'client');
+INSERT INTO Users (users_id, banned, role) VALUES (2, 'Yes', 'client');
+INSERT INTO Users (users_id, banned, role) VALUES (3, 'No', 'client');
+INSERT INTO Users (users_id, banned, role) VALUES (4, 'No', 'client');
+INSERT INTO Users (users_id, banned, role) VALUES (10, 'No', 'driver');
+INSERT INTO Users (users_id, banned, role) VALUES (11, 'No', 'driver');
+INSERT INTO Users (users_id, banned, role) VALUES (12, 'No', 'driver');
+INSERT INTO Users (users_id, banned, role) VALUES (13, 'No', 'driver');
+
+----------------------Query
+
+SELECT * FROM Trips;
+SELECT * FROM Users;
+
+SELECT users_id FROM Users WHERE banned = 'Yes'; -- Banned users
+
+SELECT 
+	request_at,
+	 ROUND(CAST( SUM(CASE WHEN LEFT(status,6)='cancel' THEN 1 ELSE 0 END) AS FLOAT) / COUNT(*),2)
+FROM Trips
+WHERE client_id NOT IN (SELECT users_id FROM Users WHERE banned = 'Yes') AND driver_id NOT IN (SELECT users_id FROM Users WHERE banned = 'Yes')
+GROUP BY request_at
+
+--------------------------------------180. Consecutive Numbers---------------------------------------------
+-- Drop table if it exists
+IF OBJECT_ID('Logs', 'U') IS NOT NULL
+    DROP TABLE Logs;
+
+-- Create table
+CREATE TABLE Logs (
+    id INT,
+    num INT
+);
+
+-- Truncate table
+TRUNCATE TABLE Logs;
+
+-- Insert data
+INSERT INTO Logs (id, num) VALUES (1, 1);
+INSERT INTO Logs (id, num) VALUES (2, 1);
+INSERT INTO Logs (id, num) VALUES (3, 1);
+INSERT INTO Logs (id, num) VALUES (4, 2);
+INSERT INTO Logs (id, num) VALUES (5, 1);
+INSERT INTO Logs (id, num) VALUES (6, 2);
+INSERT INTO Logs (id, num) VALUES (7, 2);
+
+-----------------Query
+
+SELECT L1.num AS ConsecutiveNums  
+FROM LOGS L1,LOGS L2, LOGS L3 
+WHERE L1.id = L2.id - 1 AND L2.id = L3.id - 1 AND L1.num = L2.num AND L2.num = L3.num
+
+--------------------------------------185. Department Top Three Salaries---------------------------------------------
+-- Drop tables if they exist
+IF OBJECT_ID('Employee', 'U') IS NOT NULL
+    DROP TABLE Employee;
+
+IF OBJECT_ID('Department', 'U') IS NOT NULL
+    DROP TABLE Department;
+
+-- Create Employee table
+CREATE TABLE Employee (
+    id INT,
+    name VARCHAR(255),
+    salary INT,
+    departmentId INT
+);
+
+-- Truncate Employee table
+TRUNCATE TABLE Employee;
+
+-- Insert data into Employee table
+INSERT INTO Employee (id, name, salary, departmentId) VALUES (1, 'Joe', 85000, 1);
+INSERT INTO Employee (id, name, salary, departmentId) VALUES (2, 'Henry', 80000, 2);
+INSERT INTO Employee (id, name, salary, departmentId) VALUES (3, 'Sam', 60000, 2);
+INSERT INTO Employee (id, name, salary, departmentId) VALUES (4, 'Max', 90000, 1);
+INSERT INTO Employee (id, name, salary, departmentId) VALUES (5, 'Janet', 69000, 1);
+INSERT INTO Employee (id, name, salary, departmentId) VALUES (6, 'Randy', 85000, 1);
+INSERT INTO Employee (id, name, salary, departmentId) VALUES (7, 'Will', 70000, 1);
+
+-- Create Department table
+CREATE TABLE Department (
+    id INT,
+    name VARCHAR(255)
+);
+
+-- Truncate Department table
+TRUNCATE TABLE Department;
+
+-- Insert data into Department table
+INSERT INTO Department (id, name) VALUES (1, 'IT');
+INSERT INTO Department (id, name) VALUES (2, 'Sales');
+
+--------------------QUERY
+
+SELECT * FROM Employee;
+SELECT * FROM Department;
+
+SELECT D.name AS Department ,E.name AS Employee ,E.salary AS Salary 
+FROM (
+	SELECT *,DENSE_RANK() OVER (PARTITION BY departmentId ORDER BY salary DESC) AS RANK_NUM
+	FROM Employee
+) AS E
+INNER JOIN Department D ON E.departmentId = D.id
+WHERE E.RANK_NUM <= 3
+--ORDER BY departmentId,salary DESC
+
+--------------------------------------601. Human Traffic of Stadium---------------------------------------------
+
+-- Drop table if it exists
+IF OBJECT_ID('Stadium', 'U') IS NOT NULL
+    DROP TABLE Stadium;
+
+-- Create Stadium table
+CREATE TABLE Stadium (
+    id INT,
+    visit_date DATE NULL,
+    people INT
+);
+
+-- Truncate Stadium table
+TRUNCATE TABLE Stadium;
+
+-- Insert data into Stadium table
+INSERT INTO Stadium (id, visit_date, people) VALUES (1, '2017-01-01', 10);
+INSERT INTO Stadium (id, visit_date, people) VALUES (2, '2017-01-02', 109);
+INSERT INTO Stadium (id, visit_date, people) VALUES (3, '2017-01-03', 150);
+INSERT INTO Stadium (id, visit_date, people) VALUES (4, '2017-01-04', 99);
+INSERT INTO Stadium (id, visit_date, people) VALUES (5, '2017-01-05', 145);
+INSERT INTO Stadium (id, visit_date, people) VALUES (6, '2017-01-06', 1455);
+INSERT INTO Stadium (id, visit_date, people) VALUES (7, '2017-01-07', 199);
+INSERT INTO Stadium (id, visit_date, people) VALUES (8, '2017-01-09', 188);
+
+---------------------- QUERY Print * pattern
+
+SELECT * FROM Users;
+
+BEGIN 
+	DECLARE @i INT = 1;
+	WHILE(@i <= 10)
+	BEGIN
+		PRINT REPLICATE('*',@i);
+		SET @i= @i+1;
+	END
+END
+
+--SELECT * FROM Employee;
+
+SELECT E.id,E.name,E.salary,D.id,D.name
+FROM Employee E
+INNER JOIN Department D ON E.departmentId = D.id 
+WHERE D.name = 'IT' OR D.id = 1;
+
+--SELECT * FROM Department;
+
+
